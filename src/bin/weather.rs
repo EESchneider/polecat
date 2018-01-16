@@ -14,7 +14,12 @@ fn main() {
     let client = client.build().unwrap();
 
     let geolocation_url = "http://freegeoip.net/json/";
-    let mut geo_res = client.get(geolocation_url).send().expect("GeoIP request failed");
+    let geo_res = client.get(geolocation_url).send();
+    if geo_res.is_err() {
+        println!("GOEIP FAILED");
+        return ();
+    }
+    let mut geo_res = geo_res.unwrap();
     let mut geo_text = String::new();
     geo_res.read_to_string(&mut geo_text).expect("Failed to read GeoIP");
 
@@ -30,7 +35,12 @@ fn main() {
         .unwrap();
 
     let weather_api_url = format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid=886705b4c1182eb1c69f28eb8c520e20", lat, lon);
-    let mut weather_res = client.get(&weather_api_url).send().expect("Weather request failed");
+    let weather_res = client.get(&weather_api_url).send();
+    if weather_res.is_err() {
+        println!("WEATHER FAILED");
+        return ();
+    }
+    let mut weather_res = weather_res.unwrap();
 
     let mut text = String::new();
     weather_res.read_to_string(&mut text).expect("Failed to read response");

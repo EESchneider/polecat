@@ -10,7 +10,7 @@
 [colors]
 primary = #C0310035
 secondary = #F5FFFA
-accent = #C07f7caf
+accent = #C0567C4A
 alert = #00000
 background = ${self.primary}
 foreground = ${self.secondary}
@@ -214,7 +214,7 @@ format-disconnected =
 
 [module/clock]
 type = custom/script
-exec = /home/evie/polecat/target/debug/clock
+exec = /home/evie/polecat/target/debug/clock '+%d %A'
 interval = 10
 
 [module/fuzzyclock]
