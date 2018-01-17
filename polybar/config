@@ -227,8 +227,8 @@ format-padding = 1
 [module/weather]
 type = custom/script
 label = "%output:0:10%"
-exec = /home/evie/polecat/target/debug/weather longmeadow,us
-interval = 600
+exec = /home/evie/polecat/target/debug/weather troy,us
+interval = 30
 format-background = ${colors.accent}
 format-padding = 1
 
@@ -299,8 +299,8 @@ ramp-capacity-2 = 丸
 ramp-capacity-foreground = ${colors.accent}
 
 animation-charging-0 = "上"
-animation-charging-1 = "が"
-animation-charging-2 = "る"
+animation-charging-1 = "上"
+animation-charging-2 = "上"
 animation-charging-foreground = ${colors.accent}
 animation-charging-framerate = 2000
 

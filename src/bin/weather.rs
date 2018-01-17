@@ -2,9 +2,34 @@ extern crate reqwest;
 extern crate regex;
 
 use regex::Regex;
+use std::env::args;
 use std::io::Read;
 use std::time::Duration;
 use reqwest::header::{Headers, RetryAfter};
+
+fn query_coords(client: &reqwest::Client) -> (f32, f32) {
+    let geolocation_url = "http://api.geoiplookup.net";
+    let geo_res = client.get(geolocation_url).send();
+    if geo_res.is_err() {
+        println!("GOEIP FAILED");
+    }
+    let mut geo_res = geo_res.unwrap();
+    let mut geo_text = String::new();
+    geo_res.read_to_string(&mut geo_text).expect("Failed to read GeoIP");
+
+    let lat: f32 = Regex::new(r"<latitude>(.*)</latitude>").unwrap().captures(&geo_text)
+        .and_then(|x| x.get(1))
+        .map(|x| x.as_str())
+        .and_then(|x| x.parse().ok())
+        .unwrap();
+    let lon: f32 = Regex::new(r"<longitude>(.*)</longitude>").unwrap().captures(&geo_text)
+        .and_then(|x| x.get(1))
+        .map(|x| x.as_str())
+        .and_then(|x| x.parse().ok())
+        .unwrap();
+
+    return (lat, lon);
+}
 
 fn main() {
     let mut client = reqwest::ClientBuilder::new();
@@ -13,28 +38,13 @@ fn main() {
     client.default_headers(retry);
     let client = client.build().unwrap();
 
-    let geolocation_url = "http://freegeoip.net/json/";
-    let geo_res = client.get(geolocation_url).send();
-    if geo_res.is_err() {
-        println!("GOEIP FAILED");
-        return ();
-    }
-    let mut geo_res = geo_res.unwrap();
-    let mut geo_text = String::new();
-    geo_res.read_to_string(&mut geo_text).expect("Failed to read GeoIP");
-
-    let lat: f32 = Regex::new(r#""latitude":([^,]*)"#).unwrap().captures(&geo_text)
-        .and_then(|x| x.get(1))
-        .map(|x| x.as_str())
-        .and_then(|x| x.parse().ok())
-        .unwrap();
-    let lon: f32 = Regex::new(r#""longitude":([^,]*)"#).unwrap().captures(&geo_text)
-        .and_then(|x| x.get(1))
-        .map(|x| x.as_str())
-        .and_then(|x| x.parse().ok())
-        .unwrap();
-
-    let weather_api_url = format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid=886705b4c1182eb1c69f28eb8c520e20", lat, lon);
+    let appid = "886705b4c1182eb1c69f28eb8c520e20";
+    let mut a = args();
+    a.next();
+    let weather_api_url = match a.next() {
+        Some(x) => format!("http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&mode=json&appid={}", x.trim(), appid),
+        None => format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid={}", query_coords(&client).0, query_coords(&client).1, appid)
+    };
     let weather_res = client.get(&weather_api_url).send();
     if weather_res.is_err() {
         println!("WEATHER FAILED");
@@ -54,6 +64,15 @@ fn main() {
                           .and_then(|x| x.get(1))
                           .map(|x| x.as_str())
                           .expect("Failed to read city name");
+
+    let lat: f32 = Regex::new(r#""lat":([^,}]*)"#).unwrap().captures(&text)
+                          .and_then(|x| x.get(1))
+                          .map(|x| x.as_str()).unwrap()
+                          .parse().expect("Failed to read latitude");
+    let lon: f32 = Regex::new(r#""lon":([^,}]*)"#).unwrap().captures(&text)
+                          .and_then(|x| x.get(1))
+                          .map(|x| x.as_str()).unwrap()
+                          .parse().expect("Failed to read longitude");
 
     let conditions = vec![
         ("", Regex::new(r#""id":2\d{2}"#).unwrap()), // Thunderstorm
@@ -77,5 +96,5 @@ fn main() {
     }
 
     println!("{} {:.0} °C", icon, temp);
-    println!("city={} lat={} lon={}", city, lat, lon);
+    println!("Results for: city={} lat={} lon={}", city, lat, lon);
 }
