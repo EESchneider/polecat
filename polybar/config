@@ -8,9 +8,9 @@
 ;=====================================================
 
 [colors]
-primary = #C0310035
+primary = #A0310035
 secondary = #F5FFFA
-accent = #C0567C4A
+accent = #A0567C4A
 alert = #00000
 background = ${self.primary}
 foreground = ${self.secondary}
