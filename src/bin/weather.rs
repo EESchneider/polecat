@@ -7,6 +7,10 @@ use std::io::Read;
 use std::time::Duration;
 use reqwest::header::{Headers, RetryAfter};
 
+fn internet_working() -> bool {
+    return reqwest::get("http://google.com").map( |x| x.status().is_success() ).unwrap_or(false);
+}
+
 fn query_coords(client: &reqwest::Client) -> (f32, f32) {
     let geolocation_url = "http://api.geoiplookup.net";
     let geo_res = client.get(geolocation_url).send();
@@ -31,21 +35,47 @@ fn query_coords(client: &reqwest::Client) -> (f32, f32) {
     return (lat, lon);
 }
 
+fn arg_to_query(client: &reqwest::Client, arg: Option<String>) -> String {
+    if arg.is_none() {
+        let coords = query_coords(&client);
+        return format!("lat={}&lon={}", coords.0, coords.1);
+    } else {
+        let arg = arg.unwrap();
+        let first_char = arg.chars().next().unwrap();
+        if first_char.is_numeric() || first_char == '-' {
+            let mut latlon = arg.split(',');
+            if latlon.clone().count() != 2 {
+                eprintln!("Coordinates must have the form `lat,lon`");
+            }
+
+            let lat = latlon.next().unwrap();
+            let lon = latlon.next().unwrap();
+            return format!("lat={}&lon={}", lat, lon);
+        } else {
+            return format!("q={}", arg);
+        }
+    }
+}
+
 fn main() {
+    if !internet_working() {
+        // eprintln!("The internet doesn't seem to be working");
+        eprintln!("");
+        return ();
+    }
+
     let mut client = reqwest::ClientBuilder::new();
     let mut retry = Headers::new();
     retry.set(RetryAfter::Delay(Duration::from_secs(20)));
     client.default_headers(retry);
     let client = client.build().unwrap();
 
-    let appid = "886705b4c1182eb1c69f28eb8c520e20";
-    let mut a = args();
-    a.next();
-    let weather_api_url = match a.next() {
-        Some(x) => format!("http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&mode=json&appid={}", x.trim(), appid),
-        None => format!("http://api.openweathermap.org/data/2.5/weather?lat={}&lon={}&units=metric&mode=json&appid={}", query_coords(&client).0, query_coords(&client).1, appid)
-    };
-    let weather_res = client.get(&weather_api_url).send();
+    const APPID: &str = "886705b4c1182eb1c69f28eb8c520e20";
+    const WEATHER_URL: &str = "http://api.openweathermap.org/data/2.5/weather";
+    let query = args().nth(1);
+
+    let weather_req_url = format!("{}?{}&units=metric&appid={}", WEATHER_URL, arg_to_query(&client, query), APPID);
+    let weather_res = client.get(&weather_req_url).send();
     if weather_res.is_err() {
         println!("WEATHER FAILED");
         return ();
