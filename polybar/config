@@ -35,7 +35,7 @@ fixed-center = true
 // Note: icon fonts and HanaMinA may occasionally conflict, in which case the desired font must be specified explicitly
 font-0 = "Iosevka Term:size=13"
 font-1 = "Weather Icons:size=14"
-font-2 = "Fontice-\IconsFont:size=14"
+font-2 = "Fontice\-IconsFont:size=14"
 font-3 = "HanaMinA:size=14"
 
 modules-left = clock other
